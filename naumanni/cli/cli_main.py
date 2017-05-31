@@ -52,6 +52,8 @@ def _init_logging(debug=False):
         root_logger.addHandler(fh)
         root_logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
+    logging.getLogger('tornado.curl_httpclient').setLevel(logging.INFO)
+
 
 @cli_main.command('run')
 @click.pass_context

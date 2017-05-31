@@ -2,6 +2,8 @@
 
 """WebUI."""
 
+from .websocket import WebsocketProxyHandler
+
 
 def create_webapp(naumanni):
     """App factory.

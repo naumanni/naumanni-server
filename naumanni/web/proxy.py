@@ -43,7 +43,6 @@ def proxy(request_url):
             status='{} {}'.format(exc.code, exc.message),
         )
 
-    print(_filter_dict(response_headers, PASS_RESPONSE_HEADERS))
     return current_app.response_class(
         response_body, headers=_filter_dict(response_headers, PASS_RESPONSE_HEADERS)
     )
@@ -62,6 +61,5 @@ def _request_and_filter(url, headers):
     response = http_client.fetch(url, headers=headers)
 
     content_type = response.headers['Content-Type']
-    print(content_type)
 
     return response.body, response.headers

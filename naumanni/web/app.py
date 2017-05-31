@@ -31,3 +31,6 @@ class NaumanniWebApp(Flask):
         @self.route('/')
         def _index():
             return 'hello naumanni'
+
+        from .proxy import blueprint as proxy
+        self.register_blueprint(proxy, url_prefix='/proxy')

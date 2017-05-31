@@ -2,7 +2,7 @@
 
 """Naumanni Core."""
 
-from tornado.ioloop import IOLoop
+import asyncio
 
 from .webserver import WebServer
 
@@ -22,6 +22,6 @@ class NaumanniApp(object):
         self.webserver.start()
 
         try:
-            IOLoop.current().start()
+            asyncio.get_event_loop().run_forever()
         finally:
             pass

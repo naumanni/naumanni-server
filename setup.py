@@ -9,16 +9,17 @@ install_requires = [
     # 'base58',
     'celery>=4',
     'click>=6',
-    'Flask>=0.11',
+    'Flask>=0.12',
     # 'Flask-OAuthlib',
     # 'mysql-connector-python-rf',
     # 'nnpy',
-    'python-dateutil',
+    'python-dateutil>=2.6.0',
     # 'six',
     # 'sqlalchemy>=1.1.4',
-    'tornado',
+    'tornado>=4.5.1',
     # 'websocket-client',
     # 'whisper==0.10.0rc1',
+    'pycurl>=7.43.0'
 ]
 
 setup(

@@ -44,19 +44,12 @@ class Entity(Schema):
         self.schema = definition or {}
 
     def getId(self, inputData):
-        if 'id' not in inputData:
-            print(repr(inputData))
         return inputData['id']
 
     def normalize(self, inputData, parent, key, schema, addEntity, visit):
         for subkey, subschema in self.schema.items():
             if subkey in inputData:
-                try:
-                    inputData[subkey] = visit(inputData[subkey], inputData, subkey, subschema, addEntity)
-                except:
-                    print('!!', inputData)
-                    print(subkey)
-                    raise
+                inputData[subkey] = visit(inputData[subkey], inputData, subkey, subschema, addEntity)
 
         valueId = self.getId(inputData)
         addEntity(schema, self.getId(inputData), self.klass(**inputData))

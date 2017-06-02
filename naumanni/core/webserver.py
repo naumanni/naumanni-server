@@ -21,6 +21,7 @@ class WebServer(object):
 
         application = Application(
             handlers,
+            flask_app=self.flask_app,
             websocket_ping_interval=3,
         )
         server = HTTPServer(application)

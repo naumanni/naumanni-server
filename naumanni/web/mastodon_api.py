@@ -67,3 +67,13 @@ def accounts_verify_credentials():
 @register_schema('/timelines/tag/<hashtag>', endpoint='timeline')
 def timeline(hashtag=None):
     return [status]
+
+
+@register_schema('/__websocket__/update')
+def websocket_update():
+    return status
+
+
+@register_schema('/__websocket__/notification')
+def websocket_notification():
+    return notification

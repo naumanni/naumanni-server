@@ -85,8 +85,9 @@ def _filter_response(url, response):
 
     responseBody = json.loads(response.body)
     entities, result = normalize_mastodon_response(api, responseBody)
+    # TODO: _filter_entitiesをどっかにまとめる
+    from .proxy import _filter_entities
     _filter_entities(entities)
-
     denormalized = denormalize_mastodon_response(api, result, entities)
     return json.dumps(denormalized)
 

@@ -19,7 +19,8 @@ install_requires = [
     'tornado>=4.5.1',
     # 'websocket-client',
     # 'whisper==0.10.0rc1',
-    'pycurl>=7.43.0'
+    'pycurl>=7.43.0',
+    'twitter-text-python>=1.1.0',
 ]
 
 setup(

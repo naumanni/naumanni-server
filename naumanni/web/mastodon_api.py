@@ -2,13 +2,14 @@
 from werkzeug import routing
 
 from naumanni.normalizr import Entity, denormalize, normalize
+from naumanni.mastodon_models import Status, Account, Notification
 
 
-account = Entity('accounts')
-status = Entity('statuses', {
+account = Entity('accounts', Account)
+status = Entity('statuses', Status, {
     'account': account,
 })
-notification = Entity('notifications', {
+notification = Entity('notifications', Notification, {
     'account': account,
     'status': status,
 })

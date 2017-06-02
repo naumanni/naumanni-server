@@ -38,8 +38,9 @@ class ArraySchema(object):
 
 
 class Entity(Schema):
-    def __init__(self, key, definition=None):
+    def __init__(self, key, klass, definition=None):
         self.key = key
+        self.klass = klass
         self.schema = definition or {}
 
     def getId(self, value):
@@ -50,7 +51,7 @@ class Entity(Schema):
             value[subkey] = visit(value[subkey], value, subkey, subschema, addEntity)
 
         valueId = self.getId(value)
-        addEntity(schema, self.getId(value), value)
+        addEntity(schema, self.getId(value), self.klass(**value))
         return valueId
 
     def denormalize(self, inputData, unvisit):
@@ -76,7 +77,7 @@ def denormalize(inputData, schema, entities):
         schema = schemaize(schema)
 
         if isinstance(schema, Entity):
-            entity = entities[schema.key][inputData]
+            entity = entities[schema.key][inputData].to_dict()
             return schema.denormalize(entity, _univist)
         else:
             return schema.denormalize(inputData, _univist)

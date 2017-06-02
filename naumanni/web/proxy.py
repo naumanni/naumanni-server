@@ -92,4 +92,12 @@ def _filter_response(url, response):
 
 
 def _filter_entities(entities):
-    print(entities)
+    for key in entities.keys():
+        def _result_hook(result, kwargs):
+            kwargs['objects'] = entities[key] = result
+            return kwargs
+
+        current_app.naumanni.emit(
+            'filter-{}'.format(key),
+            objects=entities[key], entities=entities,
+            _result_hook=_result_hook)

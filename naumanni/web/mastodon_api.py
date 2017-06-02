@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 from werkzeug import routing
 
-from naumanni.normalizr import Entity, normalize
+from naumanni.normalizr import Entity, denormalize, normalize
 
 
 account = Entity('accounts')
@@ -15,36 +15,54 @@ notification = Entity('notifications', {
 
 
 # api map
-apiNormalizrMap = routing.Map()
-normlizrFuncs = {}
+apiSchemaMap = routing.Map()
+apiSchemaMapAdapter = None
+schemaFuncs = {}
 
 
-def normalize_mastodon_response(api, responseBody):
-    normalizer = API_NORMALIZERS.get(api)
-    if not normalizer:
-        return normalizer(api)
-    return [], []
+def get_adapter():
+    global apiSchemaMapAdapter
+    if not apiSchemaMapAdapter:
+        apiSchemaMapAdapter = apiSchemaMap.bind('mastodon', '/')
+    return apiSchemaMapAdapter
 
 
-def register_normalizer(rule, **options):
+def get_schema(api):
+    adapter = get_adapter()
+    endpoint, args = adapter.match(api)
+    schema = schemaFuncs[endpoint](**args)
+    return schema
+
+
+def normalize_mastodon_response(api, inputData):
+    return normalize(inputData, get_schema(api))
+
+
+def denormalize_mastodon_response(api, inputData, entities):
+    return denormalize(inputData, get_schema(api), entities)
+
+
+def register_schema(rule, **options):
     def decorator(f):
+        global apiSchemaMapAdapter
         endpoint = options.pop('endpoint', f.__name__)
 
-        apiNormalizrMap.add(
+        apiSchemaMap.add(
             routing.Rule(rule, endpoint=endpoint, **options)
         )
-        normlizrFuncs[endpoint] = f
+        schemaFuncs[endpoint] = f
+        apiSchemaMapAdapter = None  # reset
         return f
     return decorator
 
 
-@register_normalizer('/accounts/verify_credentials')
-def accounts_verify_credentials(responseBody):
-    return normalize(responseBody, account)
+@register_schema('/accounts/verify_credentials')
+def accounts_verify_credentials():
+    return account
 
 
-@register_normalizer('/timelines/home', endpoint='timeline')
-@register_normalizer('/timelines/public', endpoint='timeline')
-@register_normalizer('/timelines/tag/<hashtag>', endpoint='timeline')
-def timeline(responseBody):
-    return normalize(responseBody, [status])
+@register_schema('/timelines/home', endpoint='timeline')
+@register_schema('/timelines/public', endpoint='timeline')
+@register_schema('/timelines/tag/<hashtag>', endpoint='timeline')
+def timeline(hashtag=None):
+    return [status]

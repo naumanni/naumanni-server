@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from naumanni.normalizr import Entity, normalize
+from naumanni.normalizr import Entity, denormalize, normalize
 
 
 account = Entity('accounts')
@@ -13,41 +13,49 @@ notification = Entity('notifications', {
 
 
 def test_normalize():
-    entities, result = normalize({'id': 1, 'account': 'shn'}, account)
+    source = {'id': 1, 'account': 'shn'}
+    schema = account
+
+    entities, result = normalize(source, schema)
     assert 'accounts' in entities
     assert entities['accounts'][1]['account'] == 'shn'
     assert result == 1
 
-    entities, result = normalize(
-        [
-            {
-                'id': 100,
-                'account': {
-                    'id': 1,
-                    'acct': 'shn'
-                },
-                'content': 'aaa',
-            },
-            {
-                'id': 101,
-                'account': {
-                    'id': 2,
-                    'acct': 'nayu'
-                },
-                'content': 'bbb',
-            },
-            {
-                'id': 102,
-                'account': {
-                    'id': 1,
-                    'acct': 'shn'
-                },
-                'content': 'ccc',
-            },
-        ],
-        [status]
-    )
+    denormalized = denormalize(result, schema, entities)
+    assert denormalized == source
 
+
+def test_normalize_list_nested():
+    source = [
+        {
+            'id': 100,
+            'account': {
+                'id': 1,
+                'acct': 'shn'
+            },
+            'content': 'aaa',
+        },
+        {
+            'id': 101,
+            'account': {
+                'id': 2,
+                'acct': 'nayu'
+            },
+            'content': 'bbb',
+        },
+        {
+            'id': 102,
+            'account': {
+                'id': 1,
+                'acct': 'shn'
+            },
+            'content': 'ccc',
+        },
+    ]
+    schema = [status]
+
+    # test normalize
+    entities, result = normalize(source, schema)
     assert 'accounts' in entities
     assert 'statuses' in entities
     assert len(entities['accounts']) == 2
@@ -56,3 +64,8 @@ def test_normalize():
     assert entities['accounts'][2]['acct'] == 'nayu'
     assert entities['statuses'][100]['content'] == 'aaa'
     assert result == [100, 101, 102]
+
+    # test denormalize
+    denormalized = denormalize(result, schema, entities)
+    print(denormalized)
+    assert denormalized == source

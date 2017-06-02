@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
+import json
 import re
 
 from flask import abort, Blueprint, current_app, request
 from tornado import httpclient
 
-from .mastodon_api import normalize_mastodon_response
+from .mastodon_api import normalize_mastodon_response, denormalize_mastodon_response
 
 
 blueprint = Blueprint('proxy', __name__)
@@ -64,22 +65,31 @@ def _request_and_filter(url, headers):
     http_client = httpclient.HTTPClient()
     response = http_client.fetch(url, headers=headers)
 
-    return response.body, response.headers
+    body = _filter_response(url, response)
+
+    return body, response.headers
 
 
 def _filter_response(url, response):
     mo = mastodon_api_rex.match(url)
-    print(mo.group() if mo else None, content_type)
-
-    host, api = mo.group() if mo else (None, None)
+    host, api = mo.groups() if mo else (None, None)
     content_type = response.headers['Content-Type']
     if ';' in content_type:
         content_type = content_type.split(';')[0].lower()
 
     # API responseじゃなかったらlogして返す
+    print(api, content_type, (api and content_type == 'application/json'))
     if not (api and content_type == 'application/json'):
         logger.warning('unknown request: %s %s', api, content_type)
-        return response.body, response.headers
+        return response.body
 
     responseBody = json.loads(response.body)
-    accounts, statuses = normalize_mastodon_response(api, responseBody)
+    entities, result = normalize_mastodon_response(api, responseBody)
+    _filter_entities(entities)
+
+    denormalized = denormalize_mastodon_response(api, result, entities)
+    return json.dumps(denormalized)
+
+
+def _filter_entities(entities):
+    print(entities)

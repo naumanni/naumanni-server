@@ -1,18 +1,12 @@
 # -*- coding: utf-8 -*-
-
 """WebUI."""
-
-# system module
 from datetime import datetime
 import os
 import time
 import urllib.parse
 import uuid
 
-# community module
 from flask import Flask
-
-# project module
 
 
 class NaumanniWebApp(Flask):

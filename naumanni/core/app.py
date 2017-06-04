@@ -13,10 +13,21 @@ logger = logging.getLogger(__name__)
 
 
 class NaumanniApp(object):
+    __instance = None
+
+    def __new__(cls, **kwargs):
+        if cls.__instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.__init__(**kwargs)
+        else:
+            logger.warning('application initialized twice')
+        return cls.__instance
+
     def __init__(self, debug=False):
         self.debug = debug
         self.root_path = os.path.abspath(os.path.join(naumanni.__file__, os.path.pardir, os.path.pardir))
         self.webserver = WebServer(self, (8888, '0.0.0.0'))
+        self.plugins = self.load_plugins()
 
     def run(self):
         """Naumanniのwebの方を起動する."""
@@ -24,7 +35,6 @@ class NaumanniApp(object):
             from tornado import autoreload
             autoreload.start()
 
-        self.plugins = self.load_plugins()
         self.webserver.start()
 
         try:

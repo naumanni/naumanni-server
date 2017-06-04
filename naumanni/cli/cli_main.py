@@ -12,6 +12,7 @@ import sys
 import click
 from click.core import Context
 
+import naumanni
 from naumanni.core import NaumanniApp
 
 
@@ -58,8 +59,7 @@ def _init_logging(debug=False):
 @cli_main.command('run')
 @click.pass_context
 def cli_main_run(ctx):
-    """CircleCoreの起動."""
-    # ctx.obj.ipc_socket = 'ipc://' + ipc_socket
+    """NaumanniのWeb interfaceを動かす."""
     app = ctx.obj
 
     logger.info('Master process PID:%s', os.getpid())

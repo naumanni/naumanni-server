@@ -8,6 +8,7 @@ install_requires = [
     # 'alembic',
     # 'base58',
     'celery>=4',
+    'celery[redis]',
     'click>=6',
     'Flask>=0.12',
     # 'Flask-OAuthlib',

@@ -18,7 +18,6 @@ class NaumanniApp(object):
     def __new__(cls, **kwargs):
         if cls.__instance is None:
             cls.__instance = super().__new__(cls)
-            cls.__instance.__init__(**kwargs)
         else:
             logger.warning('application initialized twice')
         return cls.__instance
@@ -43,6 +42,7 @@ class NaumanniApp(object):
             pass
 
     def load_plugins(self):
+        assert not hasattr(self, 'plugins')
         plugins = {}
         for ep in pkg_resources.iter_entry_points('naumanni.plugins'):
             plugin_id = ep.name

@@ -5,8 +5,15 @@ import logging
 import os
 import pkg_resources
 
+import redis
+
 import naumanni
 from .webserver import WebServer
+
+try:
+    import config
+except:
+    config = {}
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +34,10 @@ class NaumanniApp(object):
         self.root_path = os.path.abspath(os.path.join(naumanni.__file__, os.path.pardir, os.path.pardir))
         self.webserver = WebServer(self, (8888, '0.0.0.0'))
         self.plugins = self.load_plugins()
+        self.redis = redis.StrictRedis.from_url(config.redis_url)
+
+        from celery import current_app as current_celery
+        current_celery.naumanni_app = self
 
     def run(self):
         """Naumanniのwebの方を起動する."""

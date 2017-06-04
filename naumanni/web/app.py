@@ -6,7 +6,7 @@ import time
 import urllib.parse
 import uuid
 
-from flask import Flask
+from flask import Flask, request
 
 
 class NaumanniWebApp(Flask):
@@ -23,8 +23,15 @@ class NaumanniWebApp(Flask):
         self.naumanni = naumanni
 
         @self.route('/')
-        def _index():
+        def index():
             return 'hello naumanni'
+
+        @self.route('/plugin_scripts')
+        def plugin_scripts():
+            callback = request.args['callback']
+            print(callback)
+            raise abort(404)
+
 
         from .proxy import blueprint as proxy
         self.register_blueprint(proxy, url_prefix='/proxy')

@@ -48,6 +48,11 @@ class Status(JSONBasedModel):
                 rv.append(url)
         return rv
 
+    def add_extended_attributes(self, key, data):
+        if not hasattr(self, 'extended'):
+            self.extended = {}
+        self.extended[key] = data
+
 
 class Notification(JSONBasedModel):
     pass

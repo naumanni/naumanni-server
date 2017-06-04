@@ -17,8 +17,8 @@ class NaumanniApp(object):
 
     def __new__(cls, **kwargs):
         if cls.__instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance.__init__(**kwargs)
+            cls.__instance = super().__new__(cls)
+            cls.__instance.__init__(**kwargs)
         else:
             logger.warning('application initialized twice')
         return cls.__instance

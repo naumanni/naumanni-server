@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""
+TODO: http://docs.celeryproject.org/en/latest/userguide/extending.html#installing-bootsteps
+      このテキストが関連あるか調べる
+"""
+
 import logging
 
 from celery import Celery

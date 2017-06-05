@@ -10,7 +10,6 @@ class WebServer(object):
     def __init__(self, naumanni, listen):
         self.naumanni = naumanni
         self.listen = listen
-
         self.flask_app = create_webapp(self.naumanni)
 
     def start(self):
@@ -26,3 +25,5 @@ class WebServer(object):
         )
         server = HTTPServer(application)
         server.listen(*self.listen)
+
+        self.naumanni.emit('after-initialize-webserver', webserver=self)

@@ -85,6 +85,7 @@ class WebsocketProxyHandler(WebSocketHandler):
                 logger.info('server conncetion closed')
                 self.closed = True
                 self.close()
+                break
 
             self.on_new_message_from_server(json.loads(raw))
 

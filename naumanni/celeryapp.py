@@ -24,7 +24,9 @@ class NaumanniCelery(Celery):
 @connect_on_app_finalize
 def add_plugin_tasks(celeryapp):
     # TODO: debugはceleryappからとりたい
-    NaumanniApp(debug=True)
+    naumanni_app = NaumanniApp(debug=True)
 
     # TODO: cli_mainと被ってるけどどうすのがいいのかな
     logging.getLogger('tornado.curl_httpclient').setLevel(logging.INFO)
+
+    naumanni_app.emit('after-configure-celery', celeryapp=celeryapp)

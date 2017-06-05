@@ -19,6 +19,8 @@ class NaumanniWebApp(Flask):
         """
         super(NaumanniWebApp, self).__init__(__name__)
 
+        self.config.from_object('config')
+
         self.uptime = time.time()
         self.naumanni = naumanni
 
@@ -32,6 +34,8 @@ class NaumanniWebApp(Flask):
             print(callback)
             raise abort(404)
 
-
         from .proxy import blueprint as proxy
         self.register_blueprint(proxy, url_prefix='/proxy')
+
+    def register_plugin_blueprint(self, plugin_id, blueprint):
+        self.register_blueprint(blueprint, url_prefix='/plugins/{}'.format(plugin_id))

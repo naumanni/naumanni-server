@@ -66,7 +66,8 @@ def accounts_verify_credentials():
 @register_schema('/timelines/home', endpoint='timeline')
 @register_schema('/timelines/public', endpoint='timeline')
 @register_schema('/timelines/tag/<hashtag>', endpoint='timeline')
-def timeline(hashtag=None):
+@register_schema('/accounts/<user_id>/statuses', endpoint='timeline')
+def timeline(hashtag=None, user_id=None):
     return [status]
 
 

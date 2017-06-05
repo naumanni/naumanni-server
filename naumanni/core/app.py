@@ -37,7 +37,7 @@ class NaumanniApp(object):
         self.redis = redis.StrictRedis.from_url(config.redis_url)
 
         from celery import current_app as current_celery
-        current_celery.naumanni_app = self
+        current_celery.naumanni = self
 
     def run(self):
         """Naumanniのwebの方を起動する."""

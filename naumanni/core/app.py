@@ -32,7 +32,7 @@ class NaumanniApp(object):
     def __init__(self, debug=False):
         self.debug = debug
         self.root_path = os.path.abspath(os.path.join(naumanni.__file__, os.path.pardir, os.path.pardir))
-        self.webserver = WebServer(self, (8888, '0.0.0.0'))
+        self.webserver = WebServer(self, getattr(config, 'listen', (8888, '0.0.0.0')))
         self.plugins = self.load_plugins()
         self.redis = redis.StrictRedis.from_url(config.redis_url)
 

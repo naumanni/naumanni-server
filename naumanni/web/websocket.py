@@ -6,7 +6,9 @@ import time
 from urllib.parse import urlparse
 
 from tornado import gen, httpclient
-from tornado.websocket import WebSocketHandler, websocket_connect, WebSocketClientConnection, WebSocketError
+from tornado.websocket import (
+    WebSocketHandler, websocket_connect, WebSocketClientConnection, WebSocketError, WebSocketClosedError
+)
 
 from .mastodon_api import normalize_mastodon_response, denormalize_mastodon_response
 
@@ -109,4 +111,8 @@ class WebsocketProxyHandler(WebSocketHandler):
             message['payload'] = json.dumps(payload)
 
         # clientにpass
-        self.write_message(json.dumps(message))
+        try:
+            self.write_message(json.dumps(message))
+        except WebSocketClosedError:
+            # TODO: closeメソッドを作る
+            self.closed = True

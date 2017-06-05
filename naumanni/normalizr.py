@@ -47,6 +47,13 @@ class Entity(Schema):
         return inputData['id']
 
     def normalize(self, inputData, parent, key, schema, addEntity, visit):
+        assert isinstance(inputData, dict) or inputData is None
+
+        if inputData is None:
+            return None
+
+        inputData = inputData.copy()
+
         for subkey, subschema in self.schema.items():
             if subkey in inputData:
                 inputData[subkey] = visit(inputData[subkey], inputData, subkey, subschema, addEntity)
@@ -78,6 +85,8 @@ def denormalize(inputData, schema, entities):
         schema = schemaize(schema)
 
         if isinstance(schema, Entity):
+            if inputData is None:
+                return None
             entity = entities[schema.key][inputData].to_dict()
             return schema.denormalize(entity, _univist)
         else:

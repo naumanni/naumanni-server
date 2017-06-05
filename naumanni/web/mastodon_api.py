@@ -8,6 +8,7 @@ from naumanni.mastodon_models import Status, Account, Notification
 account = Entity('accounts', Account)
 status = Entity('statuses', Status, {
     'account': account,
+    'reblog': Entity('statuses', Status)
 })
 notification = Entity('notifications', Notification, {
     'account': account,

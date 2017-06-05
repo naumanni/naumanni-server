@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 from naumanni.normalizr import Entity, denormalize, normalize
+from naumanni.mastodon_models import Status, Account, Notification
 
 
-account = Entity('accounts')
-status = Entity('statuses', {
+account = Entity('accounts', Account)
+status = Entity('statuses', Status, {
     'account': account,
+    'reblog': Entity('statuses', Status)
 })
-notification = Entity('notifications', {
+notification = Entity('notifications', Notification, {
     'account': account,
     'status': status,
 })
@@ -18,7 +20,7 @@ def test_normalize():
 
     entities, result = normalize(source, schema)
     assert 'accounts' in entities
-    assert entities['accounts'][1]['account'] == 'shn'
+    assert entities['accounts'][1].account == 'shn'
     assert result == 1
 
     denormalized = denormalize(result, schema, entities)
@@ -34,6 +36,14 @@ def test_normalize_list_nested():
                 'acct': 'shn'
             },
             'content': 'aaa',
+            'reblog': {
+                'id': 200,
+                'account': {
+                    'id': 2,
+                    'acct': 'nayu'
+                },
+                'content': 'reblogged'
+            }
         },
         {
             'id': 101,
@@ -42,6 +52,7 @@ def test_normalize_list_nested():
                 'acct': 'nayu'
             },
             'content': 'bbb',
+            'reblog': None,
         },
         {
             'id': 102,
@@ -50,6 +61,7 @@ def test_normalize_list_nested():
                 'acct': 'shn'
             },
             'content': 'ccc',
+            'reblog': None,
         },
     ]
     schema = [status]
@@ -59,10 +71,10 @@ def test_normalize_list_nested():
     assert 'accounts' in entities
     assert 'statuses' in entities
     assert len(entities['accounts']) == 2
-    assert len(entities['statuses']) == 3
-    assert entities['accounts'][1]['acct'] == 'shn'
-    assert entities['accounts'][2]['acct'] == 'nayu'
-    assert entities['statuses'][100]['content'] == 'aaa'
+    assert len(entities['statuses']) == 4
+    assert entities['accounts'][1].acct == 'shn'
+    assert entities['accounts'][2].acct == 'nayu'
+    assert entities['statuses'][100].content == 'aaa'
     assert result == [100, 101, 102]
 
     # test denormalize

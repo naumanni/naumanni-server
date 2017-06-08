@@ -8,7 +8,11 @@ tag_rex = re.compile('<(/?.*?)(\s+[^>]*)?/?>')
 
 
 class JSONBasedModel(object):
+    _defaults = {}
+
     def __init__(self, **kwargs):
+        for key, val in self._defaults.items():
+            setattr(self, key, val)
         for key, val in kwargs.items():
             setattr(self, key, val)
 
@@ -17,10 +21,14 @@ class JSONBasedModel(object):
 
 
 class Account(JSONBasedModel):
-    pass
+    _defaults = {}
 
 
 class Status(JSONBasedModel):
+    _defaults = {
+        'reblog': None
+    }
+
     @cached_property
     def plainContent(self):
         # 雑なRemoveTag
@@ -52,6 +60,9 @@ class Status(JSONBasedModel):
         if not hasattr(self, 'extended'):
             self.extended = {}
         self.extended[key] = data
+
+    def get_extended_attributes(self, key, default=None):
+        return getattr(self, 'extended', {}).get(key, default)
 
 
 class Notification(JSONBasedModel):

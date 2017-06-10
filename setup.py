@@ -5,20 +5,15 @@ from setuptools import find_packages, setup
 
 
 install_requires = [
-    # 'alembic',
-    # 'base58',
     'celery>=4',
+    'celery[redis]',
     'click>=6',
-    'Flask>=0.11',
-    # 'Flask-OAuthlib',
-    # 'mysql-connector-python-rf',
-    # 'nnpy',
-    'python-dateutil',
-    # 'six',
-    # 'sqlalchemy>=1.1.4',
-    'tornado',
-    # 'websocket-client',
-    # 'whisper==0.10.0rc1',
+    'Flask>=0.12',
+    'pycurl>=7.43.0',
+    'python-dateutil>=2.6.0',
+    'redis>=2.10',
+    'tornado>=4.5.1',
+    'twitter-text-python>=1.1.0',
 ]
 
 setup(

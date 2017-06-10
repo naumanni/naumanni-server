@@ -2,8 +2,10 @@
 
 """WebUI."""
 
+from .websocket import WebsocketProxyHandler
 
-def create_webapp(naumanni):
+
+def create_webapp(naumanni, **kwargs):
     """App factory.
 
     :param CircleCore core: CircleCore Core
@@ -13,5 +15,5 @@ def create_webapp(naumanni):
     :rtype: CCWebApp
     """
     from .app import NaumanniWebApp
-    app = NaumanniWebApp(naumanni)
+    app = NaumanniWebApp(naumanni, **kwargs)
     return app

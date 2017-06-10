@@ -1,18 +1,12 @@
 # -*- coding: utf-8 -*-
-
 """WebUI."""
-
-# system module
 from datetime import datetime
 import os
 import time
 import urllib.parse
 import uuid
 
-# community module
-from flask import Flask
-
-# project module
+from flask import Flask, request
 
 
 class NaumanniWebApp(Flask):
@@ -25,9 +19,23 @@ class NaumanniWebApp(Flask):
         """
         super(NaumanniWebApp, self).__init__(__name__)
 
+        self.config.from_object('config')
+
         self.uptime = time.time()
         self.naumanni = naumanni
 
         @self.route('/')
-        def _index():
+        def index():
             return 'hello naumanni'
+
+        @self.route('/plugin_scripts')
+        def plugin_scripts():
+            callback = request.args['callback']
+            print(callback)
+            raise abort(404)
+
+        from .proxy import blueprint as proxy
+        self.register_blueprint(proxy, url_prefix='/proxy')
+
+    def register_plugin_blueprint(self, plugin_id, blueprint):
+        self.register_blueprint(blueprint, url_prefix='/plugins/{}'.format(plugin_id))

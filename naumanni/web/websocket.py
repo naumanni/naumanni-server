@@ -96,7 +96,7 @@ class WebsocketProxyHandler(WebSocketHandler):
 
     def on_new_message_from_server(self, message):
         """Mastodonサーバから新しいメッセージが来た"""
-        logger.debug('server: %r...', repr(message)[:80])
+        # logger.debug('server: %r...', repr(message)[:80])
 
         if message['event'] in ('update', 'notification'):
             flask_app = self.flask_app

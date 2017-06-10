@@ -2,6 +2,7 @@
 import logging
 import json
 import re
+from urllib.parse import quote, urlsplit, urlunsplit
 
 from flask import abort, Blueprint, current_app, request
 from tornado import httpclient
@@ -24,8 +25,11 @@ PASS_RESPONSE_HEADERS = [
 ]
 
 
-@blueprint.route('/<path:request_url>', methods=['GET', 'PUT', 'POST', 'DELETE'])
+@blueprint.route('/<path:request_url>', methods=['GET', 'PUT', 'POST', 'DELETE', 'PATCH'])
 def proxy(request_url):
+    # pathのencodeがlatin1できちゃうのでutf8に治す
+    request_url = request_url.encode('latin1').decode('utf-8')
+
     if request.query_string:
         request_url += '?' + request.query_string.decode('utf8')
 
@@ -72,6 +76,10 @@ def _filter_dict(src, keys):
 
 def _request_and_filter(url, request, headers):
     http_client = httpclient.HTTPClient()
+    # urlをescapeしないと怒られる
+    t = urlsplit(url)
+    url = urlunsplit((t[0], t[1], quote(t[2]), t[3], ''))
+
     response = http_client.fetch(
         url,
         headers=headers,

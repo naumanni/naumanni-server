@@ -28,6 +28,19 @@ class NaumanniWebApp(Flask):
         def index():
             return 'hello naumanni'
 
+        @self.route('/status')
+        def status():
+            from .utils import api_jsonify
+
+            from tornado.ioloop import IOLoop
+            io_loop = IOLoop.current()
+            selector = io_loop.asyncio_loop._selector
+
+            return api_jsonify({
+                'io_loop.handlers': len(io_loop.handlers),
+                'io_loop.selector.fds': len(selector._fd_to_key),
+            })
+
         @self.route('/plugin_scripts')
         def plugin_scripts():
             callback = request.args['callback']

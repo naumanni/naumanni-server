@@ -54,9 +54,13 @@ class WebsocketProxyHandler(WebSocketHandler):
         logger.debug('client: %r' % message)
 
     def on_close(self):
-        """センサーとの接続が切れた際に呼ばれる."""
-        logger.debug('connection closed: %s', self)
+        """クライアントとの接続が切れた際に呼ばれる."""
+        logger.debug('connection closed: %s %s', self.close_code, self.close_reason)
         self.closed = True
+
+        # TODO: 即、サーバ側も閉じる. read_messageをキャンセルする
+        if self.peer:
+            self.peer.close()
 
     def check_origin(self, origin):
         """nginxの内側にいるので、check_originに細工が必要"""
@@ -88,6 +92,7 @@ class WebsocketProxyHandler(WebSocketHandler):
                 break
 
             self.on_new_message_from_server(json.loads(raw))
+        logger.debug('close peer')
 
     def pinger(self):
         data = str(time.time()).encode('utf8')

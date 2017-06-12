@@ -66,7 +66,10 @@ class Entity(Schema):
         assert isinstance(inputData, dict)
 
         for subkey, subschema in self.schema.items():
-            inputData[subkey] = unvisit(inputData[subkey], subschema)
+            if subkey not in inputData:
+                inputData[subkey] = None
+            else:
+                inputData[subkey] = unvisit(inputData[subkey], subschema)
 
         return inputData
 
@@ -81,18 +84,18 @@ def normalize(inputData, schema):
 
 
 def denormalize(inputData, schema, entities):
-    def _univist(inputData, schema):
+    def _unvisit(inputData, schema):
         schema = schemaize(schema)
 
         if isinstance(schema, Entity):
             if inputData is None:
                 return None
             entity = entities[schema.key][inputData].to_dict()
-            return schema.denormalize(entity, _univist)
+            return schema.denormalize(entity, _unvisit)
         else:
-            return schema.denormalize(inputData, _univist)
+            return schema.denormalize(inputData, _unvisit)
 
-    return _univist(inputData, schema)
+    return _unvisit(inputData, schema)
 
 
 def visit(value, parent, key, schema, addEntity):

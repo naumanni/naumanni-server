@@ -44,6 +44,9 @@ setup(
         'doc': [
             # 'Sphinx',
             # 'sphinx-rtd-theme',
+        ],
+        'utils': [
+            'boto>=2.47.0',
         ]
     }
 )

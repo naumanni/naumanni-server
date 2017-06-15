@@ -10,14 +10,15 @@ from tornado.websocket import (
     WebSocketHandler, websocket_connect, WebSocketClientConnection, WebSocketError, WebSocketClosedError
 )
 
-from .mastodon_api import normalize_mastodon_response, denormalize_mastodon_response
+from .base import NaumanniRequestHandlerMixIn
+from ..mastodon_api import normalize_mastodon_response, denormalize_mastodon_response
 
 
 logger = logging.getLogger(__name__)
 https_prefix_rex = re.compile('^wss?://?')
 
 
-class WebsocketProxyHandler(WebSocketHandler):
+class WebsocketProxyHandler(WebSocketHandler, NaumanniRequestHandlerMixIn):
     """proxyる
 
     :param UUID slave_uuid:
@@ -73,11 +74,6 @@ class WebsocketProxyHandler(WebSocketHandler):
 
         return origin == host
 
-    # original
-    @property
-    def flask_app(self):
-        return self.application.settings['flask_app']
-
     @gen.coroutine
     def listen_peer(self):
         """閉じられるまで、server側wsのメッセージをlistenする"""
@@ -91,7 +87,7 @@ class WebsocketProxyHandler(WebSocketHandler):
                 self.close()
                 break
 
-            self.on_new_message_from_server(json.loads(raw))
+            yield self.on_new_message_from_server(json.loads(raw))
         logger.debug('close peer')
 
     def pinger(self):
@@ -99,20 +95,17 @@ class WebsocketProxyHandler(WebSocketHandler):
         logger.debug('pinger: %r', data)
         self.ping(data)
 
-    def on_new_message_from_server(self, message):
+    async def on_new_message_from_server(self, message):
         """Mastodonサーバから新しいメッセージが来た"""
         # logger.debug('server: %r...', repr(message)[:80])
 
         if message['event'] in ('update', 'notification'):
-            flask_app = self.flask_app
-
             api = '/__websocket__/{}'.format(message['event'])
             payload = json.loads(message['payload'])
             entities, result = normalize_mastodon_response(api, payload)
-            with flask_app.app_context():
-                # TODO: _filter_entitiesをどっかに纏める
-                from .proxy import _filter_entities
-                _filter_entities(entities)
+            # TODO: _filter_entitiesをどっかに纏める
+            from .proxy import _filter_entities
+            await _filter_entities(self.naumanni_app, entities)
             payload = denormalize_mastodon_response(api, result, entities)
             message['payload'] = json.dumps(payload)
 

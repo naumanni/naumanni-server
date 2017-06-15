@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 """Naumanni Core."""
 import asyncio
+import inspect
 import logging
 import os
 import pkg_resources
 
+import aioredis
 import redis
+from tornado import concurrent, gen
 
 import naumanni
-from .webserver import WebServer
 
 try:
     import config
@@ -31,26 +33,11 @@ class NaumanniApp(object):
 
     def __init__(self, debug=False):
         self.debug = debug
+        self.config = config
         self.root_path = os.path.abspath(os.path.join(naumanni.__file__, os.path.pardir, os.path.pardir))
-        self.webserver = WebServer(self, getattr(config, 'listen', (8888, '0.0.0.0')))
         self.plugins = self.load_plugins()
+        # TODO: remove strict redis
         self.redis = redis.StrictRedis.from_url(config.redis_url)
-
-        from celery import current_app as current_celery
-        current_celery.naumanni = self
-
-    def run(self):
-        """Naumanniのwebの方を起動する."""
-        if self.debug:
-            from tornado import autoreload
-            autoreload.start()
-
-        self.webserver.start()
-
-        try:
-            asyncio.get_event_loop().run_forever()
-        finally:
-            pass
 
     def load_plugins(self):
         assert not hasattr(self, 'plugins')
@@ -70,9 +57,60 @@ class NaumanniApp(object):
         for plugin in self.plugins.values():
             handler = getattr(plugin, funcname, None)
             if handler is not None:
-                rv[plugin.id] = handler(**kwargs)
+                result = handler(**kwargs)
+                assert not inspect.iscoroutinefunction(result)
 
+                rv[plugin.id] = result
                 if _result_hook:
                     kwargs = _result_hook(rv[plugin.id], kwargs)
 
         return rv
+
+    async def emit_async(self, event, **kwargs):
+        rv = {}
+        _result_hook = kwargs.pop('_result_hook', None)
+        funcname = 'on_' + event.replace('-', '_')
+        for plugin in self.plugins.values():
+            handler = getattr(plugin, funcname, None)
+            if handler is not None:
+                rv[plugin.id] = await handler(**kwargs)
+                if _result_hook:
+                    kwargs = _result_hook(rv[plugin.id], kwargs)
+
+        return rv
+
+    # redis
+    @property
+    async def async_redis_pool(self):
+        if not hasattr(self, '_async_redis_pool'):
+            _d = self.redis.connection_pool.connection_kwargs
+            self._async_redis_pool = await aioredis.create_pool(
+                (_d['host'], _d['port']),
+                db=_d['db'],
+                loop=asyncio.get_event_loop()
+            )
+        return self._async_redis_pool
+
+    def get_async_redis(self):
+        return _AsyncRedisPool(self)
+
+
+class _AsyncRedisPool(object):
+    __slots__ = ('_app', '_conn')
+
+    def __init__(self, app):
+        self._app = app
+        self._conn = None
+
+    async def __aenter__(self):
+        pool = await self._app.async_redis_pool
+        self._conn = await pool.acquire()
+        return self._conn
+
+    async def __aexit__(self, exc_type, exc_value, tb):
+        pool = await self._app.async_redis_pool
+        try:
+            pool.release(self._conn)
+        finally:
+            self._app = None
+            self._conn = None

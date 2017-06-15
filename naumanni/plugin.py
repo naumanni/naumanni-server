@@ -8,6 +8,10 @@ class Plugin(object):
         self._id = plugin_id
 
     @property
+    def app_ref(self):
+        return self._app
+
+    @property
     def app(self):
         rv = self._app()
         if not rv:

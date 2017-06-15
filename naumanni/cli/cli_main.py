@@ -14,6 +14,7 @@ from click.core import Context
 
 import naumanni
 from naumanni.core import NaumanniApp
+from naumanni.web.server import WebServer
 
 
 # project module
@@ -56,13 +57,19 @@ def _init_logging(debug=False):
     logging.getLogger('tornado.curl_httpclient').setLevel(logging.INFO)
 
 
-@cli_main.command('run')
+@cli_main.command('webserver')
 @click.pass_context
-def cli_main_run(ctx):
-    """NaumanniのWeb interfaceを動かす."""
+def cli_main_run_webserver(ctx):
+    """
+    run Naumanni's Websocket server
+    """
     app = ctx.obj
 
     logger.info('Master process PID:%s', os.getpid())
 
-    # run hub
-    app.run()
+    import tornado.httpclient
+    tornado.httpclient.AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
+
+    # start server
+    server = WebServer(app, app.config.listen)
+    server.start()

@@ -8,7 +8,7 @@ import pkg_resources
 
 import aioredis
 import redis
-from tornado import concurrent, gen
+from tornado import concurrent, gen, httpclient
 
 import naumanni
 
@@ -19,6 +19,7 @@ except:
 
 
 logger = logging.getLogger(__name__)
+USER_AGENT = 'Naumanni/{}'.format(naumanni.VERSION)
 
 
 class NaumanniApp(object):
@@ -93,6 +94,14 @@ class NaumanniApp(object):
 
     def get_async_redis(self):
         return _AsyncRedisPool(self)
+
+    # utility functions
+    async def crawl_url(self, url_or_request):
+        """指定されたURLを撮ってきて返す"""
+        # TODO: crawler pool的な感じにする
+        response = await httpclient.AsyncHTTPClient().fetch(
+            url_or_request, raise_error=False, user_agent=USER_AGENT)
+        return response
 
 
 class _AsyncRedisPool(object):

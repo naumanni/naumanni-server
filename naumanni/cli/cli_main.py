@@ -14,7 +14,7 @@ from click.core import Context
 
 import naumanni
 from naumanni.core import NaumanniApp
-from naumanni.web.server import WebServer
+import naumanni.web.server
 
 
 # project module
@@ -75,5 +75,9 @@ def cli_main_run_webserver(ctx):
     tornado.httpclient.AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
 
     # start server
-    server = WebServer(app, app.config.listen)
-    server.start()
+    if app.debug:
+        webserver = naumanni.web.server.DebugWebServer
+    else:
+        webserver = naumanni.web.server.ForkedWebServer
+
+    webserver(app, app.config.listen).start()

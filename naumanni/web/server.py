@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import logging
+import functools
+import os
+import signal
+import time
 
-from tornado import routing, web
+import psutil
+from tornado import ioloop, routing, web
 from tornado.httpserver import HTTPServer
 from tornado.wsgi import WSGIContainer
 import tornado.netutil
@@ -10,6 +16,11 @@ from tornado.platform.asyncio import AsyncIOMainLoop
 
 from .proxy import APIProxyHandler
 from .websocket import WebsocketProxyHandler
+
+
+logger = logging.getLogger(__name__)
+master_pid = psutil.Process(os.getpid())
+MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 5
 
 
 class NaumanniWebApplication(web.Application):
@@ -61,10 +72,13 @@ class WebServer(object):
         self.naumanni_app.emit('after-initialize-webserver', webserver=self)
 
     def start(self):
-        sockets = tornado.netutil.bind_sockets(8888)
+        # install signal handlers for master proc
+        install_master_signal_handlers()
+
+        sockets = tornado.netutil.bind_sockets(*self.naumanni_app.config.listen)
         if not self.naumanni_app.debug:
             # debugじゃなければforkする
-            tornado.process.fork_processes(0)
+            task_id = tornado.process.fork_processes(0)
             # use asyncio for ioloop
             AsyncIOMainLoop().install()
         else:
@@ -72,21 +86,79 @@ class WebServer(object):
             AsyncIOMainLoop().install()
             from tornado import autoreload
             autoreload.start()
+            task_id = None
 
-        if not tornado.process.task_id():
+        if not task_id:
             # forkしてたら0, してなければNoneがくる  1st-processなのでtimer系をここにinstall
             self.naumanni_app.emit('after-start-first-process')
 
-
-        # set celery as nonblock
-        # import tcelery
-        # tcelery.setup_nonblocking_producer()
-
         self.server = HTTPServer(self.application)
         self.server.add_sockets(sockets)
+
+        if task_id is not None:
+            # install signal handlers for child proc
+            install_child_signal_handlers(self.naumanni_app, self.server)
 
         # run ioloop
         try:
             asyncio.get_event_loop().run_forever()
         finally:
             pass
+
+
+def install_master_signal_handlers():
+    """SIGTERMされてもちゃんと終了するように"""
+    def stop_handler(sig, frame):
+        logger.warning('master caught signal: %s', sig)
+        io_loop = ioloop.IOLoop.current()
+
+        try:
+            for children_pid in master_pid.children():
+                children_pid.send_signal(signal.SIGTERM)
+
+            io_loop.add_callback_from_signal(io_loop.stop)
+        except Exception as exc:
+            logger.exception(exc)
+
+    signal.signal(signal.SIGINT, stop_handler)
+    signal.signal(signal.SIGQUIT, stop_handler)
+    signal.signal(signal.SIGTERM, stop_handler)
+
+
+def install_child_signal_handlers(naumanni_app, server):
+    """子プロセスがgracefulに死ぬように"""
+    def stop_handler(naumanni_app, server, sig, frame):
+        io_loop = tornado.ioloop.IOLoop.instance()
+
+        def stop_loop(deadline):
+            now = time.time()
+            if now < deadline and has_ioloop_tasks(io_loop):
+                logger.info('Waiting for next tick')
+                io_loop.add_timeout(now + 1, stop_loop, deadline)
+            else:
+                io_loop.stop()
+                logger.info('Shutdown finally')
+
+        def shutdown():
+            logger.info('Stopping http server')
+            naumanni_app.emit('before-stop-server')
+            server.stop()
+            logger.info('Will shutdown in %s seconds ...', MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
+            stop_loop(time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
+
+        logger.warning('child caught signal: %s', sig)
+        print(io_loop)
+        io_loop.add_callback_from_signal(shutdown)
+
+    handler = functools.partial(stop_handler, naumanni_app, server)
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGQUIT, handler)
+    signal.signal(signal.SIGTERM, handler)
+
+
+def has_ioloop_tasks(io_loop):
+    if hasattr(io_loop, '_callbacks'):
+        return io_loop._callbacks or io_loop._timeouts
+    elif hasattr(io_loop, 'handlers'):
+        return len(io_loop.handlers)
+    return False

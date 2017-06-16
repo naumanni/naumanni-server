@@ -36,23 +36,27 @@ def cli_main(ctx, debug):
 
 
 def _init_logging(debug=False):
+    # if we are attached to tty, use colorful.
+    fh = logging.StreamHandler(sys.stderr)
+    set_default_formatter = True
     if sys.stderr.isatty():
-        # if we are attached to tty, use colorful.
-        fh = logging.StreamHandler(sys.stderr)
         try:
             from ..logger import NiceColoredFormatter
             # 色指示子で9charsとる
             fh.setFormatter(NiceColoredFormatter(
                 '%(nice_levelname)-14s %(nice_name)-33s: %(message)s',
             ))
+            set_default_formatter = False
         except ImportError:
-            fh.setFormatter(logging.Formatter(
-                '%(levelname)-5s %(name)-24s: %(message)s',
-            ))
+            pass
+    if set_default_formatter:
+        fh.setFormatter(logging.Formatter(
+            '%(levelname)-5s %(name)-24s: %(message)s',
+        ))
 
-        root_logger = logging.getLogger()
-        root_logger.addHandler(fh)
-        root_logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    root_logger = logging.getLogger()
+    root_logger.addHandler(fh)
+    root_logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
     logging.getLogger('tornado.curl_httpclient').setLevel(logging.INFO)
 

@@ -25,6 +25,7 @@ setup(
     install_requires=[
         'aioredis>=0.2.0',
         'click>=6',
+        'psutil>=5.2.2',
         'pycurl>=7.43.0',
         'python-dateutil>=2.6.0',
         'tornado>=4.5.1',

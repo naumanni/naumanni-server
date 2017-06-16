@@ -51,6 +51,20 @@ class NaumanniApp(object):
             logger.info('Load plugin: %s', plugin_id)
         return plugins
 
+    async def setup(self, task_id):
+        """runloop前の最後のセットアップ"""
+        self.task_id = task_id
+        if not task_id:
+            # forkしてたら0, してなければNoneがくる  1st-processなのでtimer系をここにinstall
+            self.emit('after-start-first-process')
+
+        _d = self.redis.connection_pool.connection_kwargs
+        self._async_redis_pool = await aioredis.create_pool(
+            (_d['host'], _d['port']),
+            db=_d['db'],
+            loop=asyncio.get_event_loop()
+        )
+
     def emit(self, event, **kwargs):
         rv = {}
         _result_hook = kwargs.pop('_result_hook', None)
@@ -81,26 +95,15 @@ class NaumanniApp(object):
         return rv
 
     # redis
-    @property
-    async def async_redis_pool(self):
-        if not hasattr(self, '_async_redis_pool'):
-            _d = self.redis.connection_pool.connection_kwargs
-            self._async_redis_pool = await aioredis.create_pool(
-                (_d['host'], _d['port']),
-                db=_d['db'],
-                loop=asyncio.get_event_loop()
-            )
-        return self._async_redis_pool
-
     def get_async_redis(self):
-        return _AsyncRedisPool(self)
+        return self._async_redis_pool.get()
 
     # utility functions
     async def crawl_url(self, url_or_request):
         """指定されたURLを撮ってきて返す"""
         # TODO: crawler pool的な感じにする
         response = await httpclient.AsyncHTTPClient().fetch(
-            url_or_request, raise_error=False, user_agent=USER_AGENT)
+            url_or_request, follow_redirects=False, raise_error=False, user_agent=USER_AGENT)
         return response
 
 

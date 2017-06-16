@@ -81,10 +81,11 @@ class WebServerBase(object):
         self.naumanni_app.emit('after-initialize-webserver', webserver=self)
 
     def _run_server(self, task_id):
-        self.naumanni_app.task_id = task_id
-        if not task_id:
-            # forkしてたら0, してなければNoneがくる  1st-processなのでtimer系をここにinstall
-            self.naumanni_app.emit('after-start-first-process')
+        assert AsyncIOMainLoop().initialized()
+
+        # run self.naumanni_app.setup(task_id) synchronusly
+        io_loop = ioloop.IOLoop.current()
+        io_loop.run_sync(functools.partial(self.naumanni_app.setup, task_id))
 
         self.http_server = HTTPServer(self.application)
         self.http_server.add_sockets(self.sockets)
@@ -130,8 +131,12 @@ class ForkedWebServer(WebServerBase):
             iostream.PipeIOStream(fdw),
         ) for proc, fdr, fdw in children]
 
+        # run self.naumanni_app.setup(None) synchronusly
+        io_loop = ioloop.IOLoop.current()
+        io_loop.run_sync(functools.partial(self.naumanni_app.setup, None))
+
         # master run loop
-        ioloop.IOLoop.current().start()
+        io_loop.start()
 
         for task_id, child in enumerate(self.children):
             child.proc.join()

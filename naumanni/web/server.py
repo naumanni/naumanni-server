@@ -10,7 +10,7 @@ import signal
 import socket
 import time
 
-# import psutil
+import psutil
 from tornado import gen, ioloop, iostream, routing, web
 from tornado.httpserver import HTTPServer
 from tornado.wsgi import WSGIContainer
@@ -68,6 +68,7 @@ class WebServerBase(object):
             (r'/proxy/(?P<request_url>.+)', APIProxyHandler),
             (r'/ws/(?P<request_url>.+)', WebsocketProxyHandler),
             (r'/status', StatusAPIHandler),
+            (r'/ping', PingAPIHandler),
         ]
         self.application = NaumanniWebApplication(
             handlers,
@@ -199,16 +200,21 @@ class ForkedWebServer(WebServerBase):
         for child in self.children:
             os.kill(child.proc.pid, signal.SIGUSR1)
 
-        keys = ['io_loop.handlers', 'io_loop.selector.fds']
-        status = {'children': {}}
+        keys = ['io_loop.handlers', 'io_loop.selector.fds', 'process.uss', 'process.rss']
+        status = {'process': {}}
 
         for idx, child in enumerate(self.children):
             child_status = await child.pipe_reader.read_until(DELIMITER)
             child_status = json.loads(child_status[:-len(DELIMITER)])
-            status['children'][idx] = child_status
+            status['process'][idx] = child_status
 
             for key in keys:
                 status[key] = status.get(key, 0) + child_status[key]
+
+        master_status = _collect_status()
+        status['process']['master'] = master_status
+        for key in keys:
+            status[key] = status.get(key, 0) + master_status[key]
 
         return status
 
@@ -236,6 +242,12 @@ class StatusAPIHandler(web.RequestHandler, NaumanniRequestHandlerMixIn):
         async with self.naumanni_app.get_async_redis() as redis:
             data = await redis.get(REDIS_SERVER_STATUS_KEY)
             return json.loads(data) if data else None
+
+
+class PingAPIHandler(web.RequestHandler):
+    async def get(self):
+        self.write('pong')
+        await self.flush()
 
 
 # signal handling
@@ -312,11 +324,19 @@ def install_child_signal_handlers(webserver):
 def _collect_status():
     io_loop = ioloop.IOLoop.instance()
     selector = io_loop.asyncio_loop._selector
-    status = {
-        'io_loop.handlers': len(io_loop.handlers),
-        'io_loop.selector.fds': len(selector._fd_to_key),
-    }
+
+    proc = psutil.Process()
+    with proc.oneshot():
+        mem = proc.memory_full_info()
+
+        status = {
+            'io_loop.handlers': len(io_loop.handlers),
+            'io_loop.selector.fds': len(selector._fd_to_key),
+            'process.uss': mem.uss / 1024.0 / 1024.0,
+            'process.rss': mem.rss / 1024.0 / 1024.0,
+        }
     return status
+
 
 def has_ioloop_tasks(io_loop):
     if hasattr(io_loop, '_callbacks'):

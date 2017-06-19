@@ -7,7 +7,6 @@ import os
 import pkg_resources
 
 import aioredis
-import redis
 from tornado import concurrent, gen, httpclient
 
 import naumanni
@@ -38,8 +37,6 @@ class NaumanniApp(object):
         self.config = config
         self.root_path = os.path.abspath(os.path.join(naumanni.__file__, os.path.pardir, os.path.pardir))
         self.plugins = self.load_plugins()
-        # TODO: remove strict redis
-        self.redis = redis.StrictRedis.from_url(config.redis_url)
 
     def load_plugins(self):
         assert not hasattr(self, 'plugins')
@@ -57,11 +54,9 @@ class NaumanniApp(object):
             # forkしてたら0, してなければNoneがくる  1st-processなのでtimer系をここにinstall
             self.emit('after-start-first-process')
 
-        _d = self.redis.connection_pool.connection_kwargs
+        host, port, db = self.config.redis
         self._async_redis_pool = await aioredis.create_pool(
-            (_d['host'], _d['port']),
-            db=_d['db'],
-            loop=asyncio.get_event_loop()
+            (host, port), db=db, loop=asyncio.get_event_loop()
         )
 
     def emit(self, event, **kwargs):

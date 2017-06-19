@@ -11,6 +11,7 @@ import redis
 from tornado import concurrent, gen, httpclient
 
 import naumanni
+from ..plugin import Plugin
 
 try:
     import config
@@ -44,11 +45,9 @@ class NaumanniApp(object):
         assert not hasattr(self, 'plugins')
         plugins = {}
         for ep in pkg_resources.iter_entry_points('naumanni.plugins'):
-            plugin_id = ep.name
-            plugin_class = ep.load()
-            plugins[plugin_id] = plugin_class(self, plugin_id)
-
-            logger.info('Load plugin: %s', plugin_id)
+            plugin = Plugin.from_ep(self, ep)
+            plugins[plugin.id] = plugin
+            logger.info('Load plugin: %s', plugin.id)
         return plugins
 
     async def setup(self, task_id):

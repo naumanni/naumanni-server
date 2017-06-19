@@ -43,7 +43,7 @@ class Plugin(object):
 
     @property
     def js_package_path(self):
-        return self.path_if_exists('package.json')
+        return os.path.dirname(self.path_if_exists('package.json'))
 
     @property
     def css_file_path(self):

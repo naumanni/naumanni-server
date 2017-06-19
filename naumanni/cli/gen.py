@@ -70,18 +70,21 @@ def gen_yarn(ctx):
 
     js_plugins = []
     for plugin in app.plugins.values():
+        js_package_name = plugin.js_package_name
         js_package_path = plugin.js_package_path
         if not js_package_path:
             continue
 
         kwds = {
+            'module': js_package_name,
             'module_path': js_package_path,
         }
         js_plugins.append(kwds)
 
-    _l('#!/bin/sh')
     for kwds in js_plugins:
-        _l("""yarn add file:{module_path}""".format(**kwds))
+        _l("""(cd {module_path} && yarn link)""".format(**kwds))
+        _l("""ln -s `pwd`/node_modules {module_path}""".format(**kwds))
+        _l("""yarn link {module}""".format(**kwds))
 
 
 @cli_gen.command('css')

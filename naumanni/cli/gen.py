@@ -36,7 +36,7 @@ def gen_js(ctx):
     # export default
     _l('export default {')
     for kwds in js_plugins:
-        _l("""\t'{plugin_id}': reqruire('{module}'),""".format(**kwds))
+        _l("""\t'{plugin_id}': require('{module}'),""".format(**kwds))
     _l('}')
 
     # export function loadPluginDefaultLocales()
@@ -59,28 +59,29 @@ def gen_js(ctx):
     _l('}')
 
 
-'''
-export default {
-  'ogp': require('naumanni-ogp'),
-  'spamfilter': require('naumanni-spamfilter'),
-}
+@cli_gen.command('yarn')
+@click.pass_context
+def gen_yarn(ctx):
+    app = ctx.obj
+    out = sys.stdout
 
+    def _l(ln):
+        out.write(ln + '\n')
 
-export function loadPluginDefaultLocales() {
-  return [
-    require(/* webpackChunkName: 'locales/[request]' */ 'naumanni-ogp/locales/en'),
-    require(/* webpackChunkName: 'locales/[request]' */ 'naumanni-spamfilter/locales/en'),
-  ]
-}
+    js_plugins = []
+    for plugin in app.plugins.values():
+        js_package_path = plugin.js_package_path
+        if not js_package_path:
+            continue
 
+        kwds = {
+            'module_path': js_package_path,
+        }
+        js_plugins.append(kwds)
 
-export function loadPluginLocales(locale) {
-  return [
-    import(/* webpackChunkName: 'locales/[request]' */ `naumanni-ogp/locales/${locale}`),
-    import(/* webpackChunkName: 'locales/[request]' */ `naumanni-spamfilter/locales/${locale}`),
-  ]
-}
-'''
+    _l('#!/bin/sh')
+    for kwds in js_plugins:
+        _l("""yarn add file:{module_path}""".format(**kwds))
 
 
 @cli_gen.command('css')

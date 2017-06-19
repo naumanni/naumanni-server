@@ -42,6 +42,13 @@ class Plugin(object):
         return package_json.get('name')
 
     @property
+    def js_package_path(self):
+        return self.path_if_exists('package.json')
+
+    @property
     def css_file_path(self):
-        fn = pkg_resources.resource_filename(self._module_name, 'css/index.css')
+        return self.path_if_exists('css/index.css')
+
+    def path_if_exists(self, filename):
+        fn = pkg_resources.resource_filename(self._module_name, filename)
         return fn if os.path.exists(fn) else None

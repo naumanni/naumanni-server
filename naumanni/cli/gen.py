@@ -82,9 +82,7 @@ def gen_yarn(ctx):
         js_plugins.append(kwds)
 
     for kwds in js_plugins:
-        _l("""(cd {module_path} && yarn link)""".format(**kwds))
-        _l("""ln -s `pwd`/node_modules {module_path}""".format(**kwds))
-        _l("""yarn link {module}""".format(**kwds))
+        _l("""yarn add file:{module_path}""".format(**kwds))
 
 
 @cli_gen.command('css')

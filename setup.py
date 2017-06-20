@@ -30,6 +30,7 @@ setup(
         'python-dateutil>=2.6.0',
         'tornado>=4.5.1',
         'twitter-text-python>=1.1.0',
+        'Werkzeug>=0.12.2',
     ],
     dependency_links=[
     ],

@@ -107,4 +107,4 @@ def gen_css(ctx):
         plugin_csss.append(kwds)
 
     for kwds in plugin_csss:
-        _l('@import "{css_path}"'.format(**kwds))
+        _l('@import "{css_path}";'.format(**kwds))

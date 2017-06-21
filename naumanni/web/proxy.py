@@ -120,10 +120,11 @@ class APIProxyHandler(tornado.web.RequestHandler, NaumanniRequestHandlerMixIn):
 
     async def _pass_request(self, request_url):
         request_args = {}
+        pass_headers = PASS_REQUEST_HEADERS
         if self.content_length:
             # CurlAsyncHTTPClientがbody_producerを使えないため
             fetcher = SimpleAsyncHTTPClient
-
+            pass_headers += ['Content-Length']
             async def _produce_body(write):
                 async for buf in self.data_queue:
                     if buf is FINISH_MARKER:
@@ -140,7 +141,7 @@ class APIProxyHandler(tornado.web.RequestHandler, NaumanniRequestHandlerMixIn):
         request = httpclient.HTTPRequest(
             url=request_url,
             method=self.request.method,
-            headers=_filter_dict(self.request.headers, PASS_REQUEST_HEADERS),
+            headers=_filter_dict(self.request.headers, pass_headers),
             **request_args
         )
         response = await fetcher().fetch(request)

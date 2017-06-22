@@ -23,7 +23,7 @@ setup(
     version=get_package_version(),
     packages=find_packages(exclude=['tests']),
     install_requires=[
-        'aioredis>=0.2.0',
+        'aioredis<1.0',
         'click>=6',
         'psutil>=5.2.2',
         'pycurl>=7.43.0',

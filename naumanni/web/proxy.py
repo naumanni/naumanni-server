@@ -62,6 +62,8 @@ class APIProxyHandler(tornado.web.RequestHandler, NaumanniRequestHandlerMixIn):
         return self.run(*args, **kwargs)
 
     def data_received(self, chunk):
+        if self.content_length is None:
+            return
         self.data_queue.put(chunk)
 
         self.total_bytes += len(chunk)

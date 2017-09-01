@@ -56,7 +56,7 @@ class TestProxyHandlerCaseBase(AsyncHTTPTestCase):
 class ServerErrorProxyTestCase1(TestProxyHandlerCaseBase):
     def test_error(self):
         response = self.fetch(self.path)
-        assert response.code == 400
+        assert response.code == 422
 
     def _get_mock_handler(self):
         class _MockAPIProxyHandler(MockAPIProxyHandler):
@@ -80,7 +80,7 @@ class ServerErrorProxyTestCase2(TestProxyHandlerCaseBase):
 class SSLErrorProxyTestCase(TestProxyHandlerCaseBase):
     def test_error(self):
         response = self.fetch(self.path)
-        assert response.code == 400
+        assert response.code == 422
 
     def _get_mock_handler(self):
         class _MockAPIProxyHandler(MockAPIProxyHandler):

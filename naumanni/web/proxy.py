@@ -89,15 +89,15 @@ class APIProxyHandler(tornado.web.RequestHandler, NaumanniRequestHandlerMixIn):
             response = await self._pass_request(request_url)
         except httpclient.HTTPError as e:
             logger.error(traceback.format_exc())
-            if e.code // 100 == 5:
-                self.set_status(400)  # FIXME: appropriate status code?
+            if 500 <= e.code <= 599:
+                self.set_status(422)
                 self.finish({'reason': 'Server Error occured while proxying'})
             else:
                 self.set_status(e.code)
                 self.finish({'reason': 'Request failed while proxying'})
         except ssl.SSLError:
             logger.error(traceback.format_exc())
-            self.set_status(400)  # FIXME: appropriate status code?
+            self.set_status(422)
             self.finish({'reason': 'SSL handshake failure occured while proxying'})
         else:
             if response.code == 200:

@@ -2,6 +2,8 @@
 import logging
 import json
 import re
+import ssl
+import traceback
 from urllib.parse import quote, urlsplit, urlunsplit
 
 from tornado import gen, httpclient, queues, web
@@ -83,21 +85,35 @@ class APIProxyHandler(tornado.web.RequestHandler, NaumanniRequestHandlerMixIn):
         # TODO: ホスト名チェック
 
         # pass request to mastodon
-        response = await self._pass_request(request_url)
-        if response.code == 200:
-            response_body = await self._filter_response(request_url, response)
-            response_headers = _filter_dict(response.headers, PASS_RESPONSE_HEADERS)
-            response_headers['Cache-Control'] = 'max-age=0, private, must-revalidate'
+        try:
+            response = await self._pass_request(request_url)
+        except httpclient.HTTPError as e:
+            logger.error(traceback.format_exc())
+            if 500 <= e.code <= 599:
+                self.set_status(422)
+                self.finish({'reason': 'Server Error occured while proxying'})
+            else:
+                self.set_status(e.code)
+                self.finish({'reason': 'Request failed while proxying'})
+        except ssl.SSLError:
+            logger.error(traceback.format_exc())
+            self.set_status(422)
+            self.finish({'reason': 'SSL handshake failure occured while proxying'})
         else:
-            response_body, response_headers = response.body, response.headers
+            if response.code == 200:
+                response_body = await self._filter_response(request_url, response)
+                response_headers = _filter_dict(response.headers, PASS_RESPONSE_HEADERS)
+                response_headers['Cache-Control'] = 'max-age=0, private, must-revalidate'
+            else:
+                response_body, response_headers = response.body, response.headers
 
-        # response
-        self.set_status(response.code)
-        for k, v in response_headers.items():
-            self.set_header(k, v)
-        self.write(response_body)
-        await self.flush()
-        self.finish()
+            # response
+            self.set_status(response.code)
+            for k, v in response_headers.items():
+                self.set_header(k, v)
+            self.write(response_body)
+            await self.flush()
+            self.finish()
 
     def is_need_authorization(self):
         # appsは認証がなくても作れてしまう
